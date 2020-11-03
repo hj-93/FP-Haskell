@@ -8,8 +8,7 @@ power n k  = n * power n (k-1)
 
 
 stepsPower:: Integer -> Integer -> Integer
-stepsPower n 0 = 1
-stepsPower n k = 1 + stepsPower n (k-1)
+stepsPower n k = k + 1
 
 power1:: Integer -> Integer -> Integer
 power1 n k = product (replicate (fromInteger k) n)
