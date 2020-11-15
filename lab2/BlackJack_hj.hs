@@ -4,6 +4,7 @@ import RunGame
 import Test.QuickCheck
 
 -- | 3.1 Task A0
+hand2 :: Hand
 hand2 = Add (Card (Numeric 2) Hearts)
             (Add (Card Jack Spades) Empty)
 
@@ -40,8 +41,8 @@ displayCard card = strRank (rank card) ++ " of " ++ strSuit (suit card)
 
 display :: Hand -> String
 display Empty     = ""
-display (Add c h) = displayCard c ++ separator
-  where separator = case h of
+display (Add c h) = displayCard c ++ remaining
+  where remaining = case h of
           Empty -> "\n"
           _     -> ", " ++ display h
 
@@ -55,6 +56,7 @@ h1 = Add c1 (Add c2 (Add c3 (Add c4 Empty)))
 
 
 -- | 3.4 Task A2
+bustValue :: Integer
 bustValue = 21
 
 valueRank :: Rank -> Bool -> Integer
@@ -66,9 +68,10 @@ valueRank _ _   = 10
 
 betterValue :: Integer -> Integer -> Integer
 betterValue n1 n2
-  | n1 > bustValue = n2
-  | n2 > bustValue = n1
-  | otherwise      = max n1 n2
+  | n1 > bustValue && n2 > bustValue = min n1 n2
+  | n1 > bustValue                   = n2
+  | n2 > bustValue                   = n1
+  | otherwise                        = max n1 n2
 
 value :: Hand -> Integer
 value h = betterValue (sum1 h) (sum2 h) where
@@ -100,4 +103,3 @@ winner g b
   | gameOver g                             = Bank
   | not (gameOver b) && value b >= value g = Bank
   | otherwise                              = Guest
-
