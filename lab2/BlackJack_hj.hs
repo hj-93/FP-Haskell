@@ -131,6 +131,17 @@ cards2Hand (x:xs) h = Add x (cards2Hand xs h)
 fullDeck :: Hand
 fullDeck = cards2Hand [Card rank suit | rank <- fullRank, suit <- fullSuit] Empty
 
+-- | 3.4 Task B3
 draw :: Hand -> Hand -> (Hand,Hand)
 draw Empty _        = error "draw: The deck is empty."
 draw (Add c h) hand = (h, Add c hand)
+
+-- | 3.4 Task B4
+playBankHelper :: Hand -> Hand -> Hand
+playBankHelper deck h
+  | value h >= 16 = h
+  | otherwise     = playBankHelper smallerDeck biggerHand
+                      where (smallerDeck, biggerHand) = draw deck h
+
+playBank :: Hand -> Hand
+playBank deck =  playBankHelper deck Empty
