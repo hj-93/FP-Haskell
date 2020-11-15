@@ -177,3 +177,18 @@ prop_shuffle_sameCards g c h =
 
 prop_size_shuffle :: StdGen -> Hand -> Bool
 prop_size_shuffle g h = (size $ shuffleDeck g h) == size h
+
+-- | 3.5 Task B6
+implementation = Interface
+  { iFullDeck = fullDeck
+  , iValue    = value
+  , iDisplay  = display
+  , iGameOver = gameOver
+  , iWinner   = winner
+  , iDraw     = draw
+  , iPlayBank = playBank
+  , iShuffle  = shuffleDeck
+  }
+
+main :: IO ()
+main = runGame implementation
