@@ -116,3 +116,17 @@ prop_onTopOf_assoc p1 p2 p3 =
 prop_size_onTopOf :: Hand -> Hand -> Bool
 prop_size_onTopOf p1 p2 =
   (size p1 + size p2) == (size $ p1 <+ p2)
+
+-- | 3.4 Task B2
+fullRank :: [Rank]
+fullRank = [Numeric i | i <- [2..10]] ++ [Jack, Queen, King, Ace]
+
+fullSuit :: [Suit]
+fullSuit = [Hearts, Spades, Diamonds, Clubs]
+
+cards2Hand :: [Card] -> Hand -> Hand
+cards2Hand [] h     = h
+cards2Hand (x:xs) h = Add x (cards2Hand xs h)
+
+fullDeck :: Hand
+fullDeck = cards2Hand [Card rank suit | rank <- fullRank, suit <- fullSuit] Empty
