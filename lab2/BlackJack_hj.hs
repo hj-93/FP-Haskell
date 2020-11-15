@@ -2,6 +2,7 @@ module BlackJack where
 import Cards
 import RunGame
 import Test.QuickCheck
+import System.Random
 
 -- | 3.1 Task A0
 hand2 :: Hand
@@ -104,6 +105,7 @@ winner g b
   | not (gameOver b) && value b >= value g = Bank
   | otherwise                              = Guest
 
+
 -- | 3.4 Task B1
 (<+) :: Hand -> Hand -> Hand
 (<+) Empty p2     = p2
@@ -116,6 +118,7 @@ prop_onTopOf_assoc p1 p2 p3 =
 prop_size_onTopOf :: Hand -> Hand -> Bool
 prop_size_onTopOf p1 p2 =
   (size p1 + size p2) == (size $ p1 <+ p2)
+
 
 -- | 3.4 Task B2
 fullRank :: [Rank]
@@ -131,10 +134,12 @@ cards2Hand (x:xs) h = Add x (cards2Hand xs h)
 fullDeck :: Hand
 fullDeck = cards2Hand [Card rank suit | rank <- fullRank, suit <- fullSuit] Empty
 
+
 -- | 3.4 Task B3
 draw :: Hand -> Hand -> (Hand,Hand)
 draw Empty _        = error "draw: The deck is empty."
 draw (Add c h) hand = (h, Add c hand)
+
 
 -- | 3.4 Task B4
 playBankHelper :: Hand -> Hand -> Hand
@@ -145,3 +150,30 @@ playBankHelper deck h
 
 playBank :: Hand -> Hand
 playBank deck =  playBankHelper deck Empty
+
+
+-- | 3.4 Task B5
+removeNthCard :: Hand -> Integer -> (Card, Hand)
+removeNthCard Empty _        = error "Hand is empty."
+removeNthCard (Add c h) n
+  | n == 0 || n > size h + 1 = error "nth card does not exist."
+  | n == 1                   = (c, h)
+  | otherwise                = (c1, Add c h1)
+                                 where (c1, h1) = removeNthCard h (n - 1)
+
+shuffleDeck :: StdGen -> Hand -> Hand
+shuffleDeck _ Empty = Empty
+shuffleDeck g h     = Add c1 $ shuffleDeck g1 h1
+                        where (c1, h1) = removeNthCard h n
+                              (n, g1)  = randomR (1, size h) g
+
+belongsTo :: Card -> Hand -> Bool
+c `belongsTo` Empty = False
+c `belongsTo` (Add c' h) = c == c' || c `belongsTo` h
+
+prop_shuffle_sameCards :: StdGen -> Card -> Hand -> Bool
+prop_shuffle_sameCards g c h =
+    c `belongsTo` h == c `belongsTo` shuffleDeck g h
+
+prop_size_shuffle :: StdGen -> Hand -> Bool
+prop_size_shuffle g h = (size $ shuffleDeck g h) == size h
