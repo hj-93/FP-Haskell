@@ -130,3 +130,7 @@ cards2Hand (x:xs) h = Add x (cards2Hand xs h)
 
 fullDeck :: Hand
 fullDeck = cards2Hand [Card rank suit | rank <- fullRank, suit <- fullSuit] Empty
+
+draw :: Hand -> Hand -> (Hand,Hand)
+draw Empty _        = error "draw: The deck is empty."
+draw (Add c h) hand = (h, Add c hand)
