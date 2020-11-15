@@ -103,3 +103,16 @@ winner g b
   | gameOver g                             = Bank
   | not (gameOver b) && value b >= value g = Bank
   | otherwise                              = Guest
+
+-- | 3.4 Task B1
+(<+) :: Hand -> Hand -> Hand
+(<+) Empty p2     = p2
+(<+) (Add c h) p2 = Add c $ h <+ p2
+
+prop_onTopOf_assoc :: Hand -> Hand -> Hand -> Bool
+prop_onTopOf_assoc p1 p2 p3 =
+  p1<+(p2<+p3) == (p1<+p2)<+p3
+
+prop_size_onTopOf :: Hand -> Hand -> Bool
+prop_size_onTopOf p1 p2 =
+  (size p1 + size p2) == (size $ p1 <+ p2)
