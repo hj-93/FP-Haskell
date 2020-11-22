@@ -99,21 +99,26 @@ lineToRow x  = map charToCell x
 
 -- | cell generates an arbitrary cell in a Sudoku
 cell :: Gen (Cell)
-cell = undefined
+cell = frequency
+         [(9, return Nothing),
+          (1, do n <- choose (1,9)
+                 return (Just n))]
 
 
 -- * C2
 
 -- | an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
-  arbitrary = undefined
+  arbitrary = do
+                rows <- (vectorOf 9 (vectorOf 9 cell))
+                return (Sudoku rows)
 
  -- hint: get to know the QuickCheck function vectorOf
  
 -- * C3
 
 prop_Sudoku :: Sudoku -> Bool
-prop_Sudoku = undefined
+prop_Sudoku sudoku = isSudoku sudoku
   -- hint: this definition is simple!
   
 ------------------------------------------------------------------------------
