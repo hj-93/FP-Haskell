@@ -4,6 +4,7 @@ import Test.QuickCheck
 import Data.List
 import Data.Maybe
 import Data.Char
+import Data.List.Split
 ------------------------------------------------------------------------------
 
 -- | Representation of sudoku puzzles (allows some junk)
@@ -45,7 +46,7 @@ allBlankSudoku = Sudoku [ [Nothing | i <- [1..9]] | i <- [1..9] ]
 -- | isSudoku sud checks if sud is really a valid representation of a sudoku
 -- puzzle
 isSudoku :: Sudoku -> Bool
-isSudoku s = (length $ s_rows) == 9 &&
+isSudoku s = length s_rows == 9 &&
              and [ isRowOk row | row <- s_rows ]
              where s_rows = rows s
                    isRowOk r = length r == 9 && and [ fromMaybe 1 c `elem` [1..9 ] | c <- r]
@@ -56,7 +57,7 @@ isSudoku s = (length $ s_rows) == 9 &&
 -- i.e. there are no blanks
 isFilled :: Sudoku -> Bool
 isFilled s = isSudoku s &&
-             and [not $ Nothing `elem` row | row <- s_rows]
+             and [Nothing `notElem` row | row <- s_rows]
                where s_rows = rows s 
 
 ------------------------------------------------------------------------------
@@ -66,7 +67,7 @@ isFilled s = isSudoku s &&
 -- | printSudoku sud prints a nice representation of the sudoku sud on
 -- the screen
 printSudoku :: Sudoku -> IO ()
-printSudoku s = do putStr $ concat [ trRow row | row <- s_rows ]
+printSudoku s = putStr $ concat [ trRow row | row <- s_rows ]
                      where s_rows = rows s
                            trCell Nothing  = "."
                            trCell (Just n) = show n
@@ -82,7 +83,7 @@ readSudoku path = do
                     content <- readFile path
                     let sudoku = Sudoku [lineToRow line | line <- lines content]
                     if isSudoku sudoku
-                       then return (sudoku)
+                       then return sudoku
                        else error "Not a Sudoku!"
 
 charToCell :: Char -> Cell
@@ -98,7 +99,7 @@ lineToRow x  = map charToCell x
 -- * C1
 
 -- | cell generates an arbitrary cell in a Sudoku
-cell :: Gen (Cell)
+cell :: Gen Cell
 cell = frequency
          [(9, return Nothing),
           (1, do n <- choose (1,9)
@@ -109,9 +110,7 @@ cell = frequency
 
 -- | an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
-  arbitrary = do
-                rows <- (vectorOf 9 (vectorOf 9 cell))
-                return (Sudoku rows)
+  arbitrary = do Sudoku <$> vectorOf 9 (vectorOf 9 cell)
 
  -- hint: get to know the QuickCheck function vectorOf
  
@@ -128,22 +127,40 @@ type Block = [Cell] -- a Row is also a Cell
 
 -- * D1
 
+count :: Eq a => a -> [a] -> Int
+count x = length . filter (x==)
+
 isOkayBlock :: Block -> Bool
-isOkayBlock = undefined
+isOkayBlock x = ( count Nothing x - 1 + (length $ nub x) ) == 9
 
 
 -- * D2
 
 blocks :: Sudoku -> [Block]
-blocks = undefined
+blocks s = (rows s) ++ (transpose (rows s)) ++ (squareBlock s)
+
+squareBlock :: Sudoku -> [Block]
+squareBlock s = map tupleToList (merge zippedChunk)
+             where
+               splittedChunks = chunksOf 3 [ chunksOf 3 row | row <- rows s]
+               zippedChunk = [zip3 (chunk !! 0) (chunk !! 1) (chunk !! 2) | chunk <- splittedChunks]
+
+merge :: [[a]] -> [a]
+merge []     = []
+merge (x:xs) = x ++ merge xs
+
+tupleToList :: ([a],[a],[a]) -> [a]
+tupleToList (a, b, c)  =  a ++ b ++ c
+
 
 prop_blocks_lengths :: Sudoku -> Bool
-prop_blocks_lengths = undefined
+prop_blocks_lengths s = length (blocks s) == 27 &&
+                         and [length b == 9 | b <- blocks s]
 
 -- * D3
 
 isOkay :: Sudoku -> Bool
-isOkay = undefined
+isOkay s = and [isOkayBlock b | b <- blocks s]
 
 
 ---- Part A ends here --------------------------------------------------------
