@@ -1,7 +1,9 @@
 module Sudoku where
 
 import Test.QuickCheck
-
+import Data.List
+import Data.Maybe
+import Data.Char
 ------------------------------------------------------------------------------
 
 -- | Representation of sudoku puzzles (allows some junk)
@@ -46,7 +48,7 @@ isSudoku :: Sudoku -> Bool
 isSudoku s = (length $ s_rows) == 9 &&
              and [ isRowOk row | row <- s_rows ]
              where s_rows = rows s
-                   isRowOk r = length r == 9 && and [ c `elem` map Just [1..9 ] || c == Nothing | c <- r]
+                   isRowOk r = length r == 9 && and [ fromMaybe 1 c `elem` [1..9 ] | c <- r]
 
 -- * A3
 
@@ -64,14 +66,32 @@ isFilled s = isSudoku s &&
 -- | printSudoku sud prints a nice representation of the sudoku sud on
 -- the screen
 printSudoku :: Sudoku -> IO ()
-printSudoku = undefined
+printSudoku s = do putStr $ concat [ trRow row | row <- s_rows ]
+                     where s_rows = rows s
+                           trCell Nothing  = "."
+                           trCell (Just n) = show n
+                           trRow []        = "\n"
+                           trRow (x:xs)    = trCell x ++ trRow xs
 
 -- * B2
 
 -- | readSudoku file reads from the file, and either delivers it, or stops
 -- if the file did not contain a sudoku
 readSudoku :: FilePath -> IO Sudoku
-readSudoku = undefined
+readSudoku path = do
+                    content <- readFile path
+                    let sudoku = Sudoku [lineToRow line | line <- lines content]
+                    if isSudoku sudoku
+                       then return (sudoku)
+                       else error "Not a Sudoku!"
+
+charToCell :: Char -> Cell
+charToCell c | c == '.'  = Nothing
+             | otherwise = Just (digitToInt c)
+
+lineToRow :: String -> Row
+lineToRow [] = []
+lineToRow x  = map charToCell x
 
 ------------------------------------------------------------------------------
 
