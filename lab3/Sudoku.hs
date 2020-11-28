@@ -1,6 +1,7 @@
 module Sudoku where
 
 import Test.QuickCheck
+import Test.QuickCheck.Modifiers
 import Data.List
 import Data.Maybe
 import Data.Char
@@ -175,28 +176,45 @@ type Pos = (Int,Int)
 -- * E1
 
 blanks :: Sudoku -> [Pos]
-blanks = undefined
+blanks s = blanksHelper (rows s)
 
---prop_blanks_allBlanks :: ...
---prop_blanks_allBlanks =
+blanksHelper :: [[Cell]] -> [(Int, Int)]
+blanksHelper []     = [] 
+blanksHelper (x:xs) = zip (repeat (8 - length xs)) (elemIndices Nothing x) ++
+                      blanksHelper xs
+
+prop_blanks_allBlanks :: Bool
+prop_blanks_allBlanks = length (blanks allBlankSudoku) == 81
 
 
 -- * E2
 
 (!!=) :: [a] -> (Int,a) -> [a]
-xs !!= (i,y) = undefined
+[] !!= (i,y) = error "Empty list not allowed!"
+xs !!= (i,y) = part1 ++ [y] ++ part2
+               where (part1, _:part2) = splitAt i xs
 
---prop_bangBangEquals_correct :: ...
---prop_bangBangEquals_correct =
+prop_bangBangEquals_correct :: Eq a => NonEmptyList a -> (Int,a) -> Bool
+prop_bangBangEquals_correct (NonEmpty xs) (i, a) = part1 == part1' &&
+                                        part2 == part2' &&
+                                        new   == a
+                                          where (part1 ,   _:part2)  = splitAt pos xs
+                                                (part1', new:part2') = splitAt pos (xs !!= (pos, a))
+                                                pos                  = i `mod` (length xs) 
 
 
 -- * E3
-
 update :: Sudoku -> Pos -> Cell -> Sudoku
-update = undefined
+update (Sudoku allRows) pos cell = Sudoku (updateNthRow allRows pos cell)
 
---prop_update_updated :: ...
---prop_update_updated =
+updateNthRow :: [Block] -> Pos -> Cell -> [Block]
+updateNthRow (x:xs) (r, c) cell | length xs == (8 - r) = x !!= (c, cell) : xs
+                                | otherwise            = x : updateNthRow xs (r, c) cell
+
+prop_update_updated :: Sudoku -> Pos -> Cell -> Bool
+prop_update_updated s (r, c) cell = ((rows (update s (r', c') cell)) !! r') !! c' == cell
+                                      where r' = r `mod` 8
+                                            c' = c `mod` 8
 
 
 ------------------------------------------------------------------------------
