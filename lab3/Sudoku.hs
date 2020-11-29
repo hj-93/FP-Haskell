@@ -132,7 +132,9 @@ count :: Eq a => a -> [a] -> Int
 count x = length . filter (x==)
 
 isOkayBlock :: Block -> Bool
-isOkayBlock x = ( count Nothing x - 1 + (length $ nub x) ) == 9
+isOkayBlock x = ( removedNothing + (length $ nub x) ) == 9
+                  where removedNothing | Nothing `elem` x = count Nothing x - 1
+                                       | otherwise        = 0
 
 
 -- * D2
@@ -220,12 +222,47 @@ prop_update_updated s (r, c) cell = ((rows (update s (r', c') cell)) !! r') !! c
 ------------------------------------------------------------------------------
 
 -- * F1
+solve :: Sudoku -> Maybe Sudoku
+solve s = listToMaybe $ catMaybes $ solve' (blanks s) [s]
 
+solve' :: [Pos] -> [Sudoku] -> [Maybe Sudoku]
+solve' _ []                  = []
+solve' [] (s:[])
+  | isOkay s                 = [Just s]
+  | otherwise                = [Nothing]
+solve' (p:ps) (s:[])         = solve' ps s1' ++ solve' ps s2'
+                                 where (s1', s2') = case res of
+                                                      []      -> ([], [])
+                                                      (s1:s2) -> ([s1], s2)
+                                       res        = sFilter (map (update s p) (map Just [1..9]))
+solve' ps (s:ss)             = solve' ps [s]  ++ solve' ps ss
+
+
+sFilter :: [Sudoku] -> [Sudoku]
+sFilter []                 = []
+sFilter (s:ss)| isOkay s   = s : sFilter ss
+              | otherwise  = sFilter ss
 
 -- * F2
-
+readAndSolve :: FilePath -> IO ()
+readAndSolve  file = do
+                       s <- readSudoku file
+                       let maybeSudoku = solve s
+                       if maybeSudoku == Nothing
+                         then putStr "(no solution)\n"
+                         else printSudoku (fromJust maybeSudoku)
 
 -- * F3
-
+isSolutionOf :: Sudoku -> Sudoku -> Bool
+isSolutionOf slt s = isFilled slt &&
+                     isOkay slt   &&
+                     updateToNothing slt (blanks s) == s
+                       where updateToNothing s []     = s
+                             updateToNothing s (x:xs) = updateToNothing (update s x Nothing) xs
 
 -- * F4
+prop_SolveSound :: Sudoku -> Property
+prop_SolveSound s =  case solve s of
+                       Just slt -> label "Solution found" $ slt `isSolutionOf` s
+                       _        -> label "Solution not found" $ True
+
