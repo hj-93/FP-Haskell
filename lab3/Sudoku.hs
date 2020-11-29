@@ -192,17 +192,18 @@ prop_blanks_allBlanks = length (blanks allBlankSudoku) == 81
 -- * E2
 
 (!!=) :: [a] -> (Int,a) -> [a]
-[] !!= (i,y) = error "Empty list not allowed!"
+[] !!= (i,y) = [] 
 xs !!= (i,y) = part1 ++ [y] ++ part2
                where (part1, _:part2) = splitAt i xs
 
-prop_bangBangEquals_correct :: Eq a => NonEmptyList a -> (Int,a) -> Bool
-prop_bangBangEquals_correct (NonEmpty xs) (i, a) = part1 == part1' &&
+prop_bangBangEquals_correct :: [Cell]  -> (Int,Cell) -> Bool
+prop_bangBangEquals_correct [] (i, a) = [] !!= (abs i, a) == []
+prop_bangBangEquals_correct xs (i, a) = part1 == part1' &&
                                         part2 == part2' &&
                                         new   == a
                                           where (part1 ,   _:part2)  = splitAt pos xs
                                                 (part1', new:part2') = splitAt pos (xs !!= (pos, a))
-                                                pos                  = i `mod` (length xs) 
+                                                pos                  = abs i `mod` (length xs) 
 
 
 -- * E3
@@ -262,7 +263,7 @@ isSolutionOf slt s = isFilled slt &&
 
 -- * F4
 prop_SolveSound :: Sudoku -> Property
-prop_SolveSound s =  case solve s of
-                       Just slt -> label "Solution found" $ slt `isSolutionOf` s
-                       _        -> label "Solution not found" $ True
+prop_SolveSound s = isOkay s && isJust (solve s) ==> fromJust (solve s) `isSolutionOf` s
 
+fewerChecks prop =
+  quickCheckWith stdArgs{maxSuccess=30 } prop
