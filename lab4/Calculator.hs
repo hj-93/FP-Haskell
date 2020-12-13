@@ -22,12 +22,13 @@ setup window =
      fx      <- mkHTML "<i>f</i>(<i>x</i>)="  -- The text "f(x)="
      input   <- mkInput 20 "x"                -- The formula input
      draw    <- mkButton "Draw graph"         -- The draw button
+     zoom    <- mkSlider (1, 100) 50          -- The zoom slider
        -- The markup "<i>...</i>" means that the text inside should be rendered
        -- in italics.
 
      -- Add the user interface elements to the page, creating a specific layout
      formula <- row [pure fx,pure input]
-     getBody window #+ [column [pure canvas,pure formula,pure draw]]
+     getBody window #+ [column [pure canvas,pure formula,pure draw, pure zoom]]
 
      -- Styling
      getBody window # set style [("backgroundColor","lightblue"),
@@ -35,17 +36,21 @@ setup window =
      pure input # set style [("fontSize","14pt")]
 
      -- Interaction (install event handlers)
-     on UI.click     draw  $ \ _ -> readAndDraw input canvas
-     on valueChange' input $ \ _ -> readAndDraw input canvas
+     on UI.click     draw  $ \ _ -> readAndDraw input zoom canvas
+     on valueChange' input $ \ _ -> readAndDraw input zoom canvas
+     on valueChange' zoom  $ \ _ -> readAndDraw input zoom canvas
 
-
-readAndDraw :: Element -> Canvas -> UI ()
-readAndDraw input canvas =
+readAndDraw :: Element -> Element -> Canvas -> UI ()
+readAndDraw input zoom canvas =
   do
+      -- Get the current zoom (a String) from the zoom element
+     scale' <- get value zoom
+     let scale  = read scale' / 1000
+
      -- Get the current formula (a String) from the input element
      formula <- get value input
      let allpoints | isNothing exp  = []
-                   | otherwise      = points (fromJust exp) 0.04 (canWidth, canHeight)
+                   | otherwise      = points (fromJust exp) scale (canWidth, canHeight)
            where exp = readExpr formula
 
      -- Clear the canvas
@@ -54,8 +59,6 @@ readAndDraw input canvas =
      -- The following code draws the formula text in the canvas and a blue line.
      -- It should be replaced with code that draws the graph of the function.
      set UI.fillStyle (UI.solidColor (UI.RGB 0 0 0)) (pure canvas)
-     UI.fillText formula (10,canHeight/2) canvas
-
      path "blue" allpoints canvas
 
 -- threepenny type Point = (Double, Double)
