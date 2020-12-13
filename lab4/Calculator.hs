@@ -5,6 +5,7 @@
 import ThreepennyPages
 import Graphics.UI.Threepenny.Core as UI
 import qualified Graphics.UI.Threepenny as UI
+import Expr
 
 canWidth,canHeight :: Num a => a
 canWidth  = 300
@@ -48,3 +49,20 @@ readAndDraw input canvas =
      set UI.fillStyle (UI.solidColor (UI.RGB 0 0 0)) (pure canvas)
      UI.fillText formula (10,canHeight/2) canvas
      path "blue" [(10,10),(canWidth-10,canHeight/2)] canvas
+
+-- threepenny type Point = (Double, Double)
+
+-- calculates all the points of the graph in terms of pixels
+points :: Expr -> Double -> (Int,Int) -> [Point]
+points exp scale (width, height) = zip xs_pix ys_pix
+  where -- converts a pixel x-coordinate to a real x-coordinate
+        pixToReal :: Double -> Double
+        pixToReal x = scale * (x - fromIntegral width / 2)
+
+        -- converts a real y-coordinate to a pixel y-coordinate
+        realToPix :: Double -> Double
+        realToPix y =  -1 * y / scale + (fromIntegral height) / 2
+
+        xs_pix  = [0..fromIntegral width]
+        xs_real = map pixToReal xs_pix
+        ys_pix  = map (realToPix . eval exp) xs_real
