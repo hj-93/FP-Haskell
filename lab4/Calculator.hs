@@ -6,6 +6,7 @@ import ThreepennyPages
 import Graphics.UI.Threepenny.Core as UI
 import qualified Graphics.UI.Threepenny as UI
 import Expr
+import Data.Maybe
 
 canWidth,canHeight :: Num a => a
 canWidth  = 300
@@ -40,22 +41,30 @@ setup window =
 
 readAndDraw :: Element -> Canvas -> UI ()
 readAndDraw input canvas =
-  do -- Get the current formula (a String) from the input element
+  do
+     -- Get the current formula (a String) from the input element
      formula <- get value input
+     let allpoints | isNothing exp  = []
+                   | otherwise      = points (fromJust exp) 0.04 (canWidth, canHeight)
+           where exp = readExpr formula
+
      -- Clear the canvas
      clearCanvas canvas
+
      -- The following code draws the formula text in the canvas and a blue line.
      -- It should be replaced with code that draws the graph of the function.
      set UI.fillStyle (UI.solidColor (UI.RGB 0 0 0)) (pure canvas)
      UI.fillText formula (10,canHeight/2) canvas
-     path "blue" [(10,10),(canWidth-10,canHeight/2)] canvas
+
+     path "blue" allpoints canvas
 
 -- threepenny type Point = (Double, Double)
 
 -- calculates all the points of the graph in terms of pixels
 points :: Expr -> Double -> (Int,Int) -> [Point]
 points exp scale (width, height) = zip xs_pix ys_pix
-  where -- converts a pixel x-coordinate to a real x-coordinate
+  where
+        -- converts a pixel x-coordinate to a real x-coordinate
         pixToReal :: Double -> Double
         pixToReal x = scale * (x - fromIntegral width / 2)
 
