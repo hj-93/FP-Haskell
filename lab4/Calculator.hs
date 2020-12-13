@@ -22,13 +22,14 @@ setup window =
      fx      <- mkHTML "<i>f</i>(<i>x</i>)="  -- The text "f(x)="
      input   <- mkInput 20 "x"                -- The formula input
      draw    <- mkButton "Draw graph"         -- The draw button
-     zoom    <- mkSlider (1, 100) 50          -- The zoom slider
+     zoom    <- mkSlider (1, 100) 50          -- The zoom IN/OUT slider
+     diff    <- mkButton "Draw Differentiate" -- The diff button
        -- The markup "<i>...</i>" means that the text inside should be rendered
        -- in italics.
 
      -- Add the user interface elements to the page, creating a specific layout
      formula <- row [pure fx,pure input]
-     getBody window #+ [column [pure canvas,pure formula,pure draw, pure zoom]]
+     getBody window #+ [column [pure canvas,pure formula,pure draw, pure zoom, pure diff]]
 
      -- Styling
      getBody window # set style [("backgroundColor","lightblue"),
@@ -36,22 +37,26 @@ setup window =
      pure input # set style [("fontSize","14pt")]
 
      -- Interaction (install event handlers)
-     on UI.click     draw  $ \ _ -> readAndDraw input zoom canvas
-     on valueChange' input $ \ _ -> readAndDraw input zoom canvas
-     on valueChange' zoom  $ \ _ -> readAndDraw input zoom canvas
+     on UI.click     draw  $ \ _ -> readAndDraw input zoom False canvas
+     on UI.click     diff  $ \ _ -> readAndDraw input zoom True canvas
 
-readAndDraw :: Element -> Element -> Canvas -> UI ()
-readAndDraw input zoom canvas =
+     on valueChange' input $ \ _ -> readAndDraw input zoom False canvas
+     on valueChange' zoom  $ \ _ -> readAndDraw input zoom False canvas
+
+readAndDraw :: Element -> Element -> Bool -> Canvas -> UI ()
+readAndDraw input zoom diff canvas =
   do
       -- Get the current zoom (a String) from the zoom element
-     scale' <- get value zoom
-     let scale  = read scale' / 1000
+     scale <- ((/1000) . read) <$> get value zoom
 
      -- Get the current formula (a String) from the input element
-     formula <- get value input
-     let allpoints | isNothing exp  = []
-                   | otherwise      = points (fromJust exp) scale (canWidth, canHeight)
-           where exp = readExpr formula
+     maybeExp <- readExpr <$> get value input
+     let maybeExp' = case diff of
+                          True  -> differentiate <$> maybeExp
+                          False -> maybeExp
+     let allpoints = case maybeExp' of
+                       Nothing  -> []
+                       Just exp -> points exp scale (canWidth, canHeight)
 
      -- Clear the canvas
      clearCanvas canvas
@@ -73,8 +78,8 @@ points exp scale (width, height) = zip xs_pix ys_pix
 
         -- converts a real y-coordinate to a pixel y-coordinate
         realToPix :: Double -> Double
-        realToPix y =  -1 * y / scale + (fromIntegral height) / 2
+        realToPix y =  -y / scale + (fromIntegral height) / 2
 
-        xs_pix  = [0..fromIntegral width]
+        xs_pix  = map fromIntegral [0..width]
         xs_real = map pixToReal xs_pix
         ys_pix  = map (realToPix . eval exp) xs_real
