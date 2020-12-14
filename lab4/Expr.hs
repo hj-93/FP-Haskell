@@ -1,6 +1,3 @@
-
-
-
 module Expr where
 import Parsing hiding (digit)
 import Data.Char(isDigit, isSpace)
@@ -19,13 +16,13 @@ data Expr = Num Double
           | Mul Expr Expr
           | Sin Expr
           | Cos Expr
-          deriving (Eq)
+          deriving (Eq, Show)
 
 --x :: Expr
 --x = Var
 
-num :: Double -> Expr
-num n= Num n
+--num :: Double -> Expr
+--num n= Num n
 
 --mul :: Expr -> Expr -> Expr
 --mul e1 e2 = Mul e1 e2
@@ -40,10 +37,10 @@ num n= Num n
 --cos' e1 = Cos e1
 
 size :: Expr -> Int
-size Var = 1
-size (Num n) = 1
-size (Sin e) = (size e) + 1
-size (Cos e) = (size e) + 1
+size Var = 0
+size (Num n) = 0
+size (Sin e) = 1 + (size e)
+size (Cos e) = 1+ (size e)
 size (Add e1 e2) =  1 + (size e1) + (size e1)
 size (Mul e1 e2) =  1 + (size e1) + (size e1)
 
@@ -53,8 +50,8 @@ size (Mul e1 e2) =  1 + (size e1) + (size e1)
 ----------------------------------------------------------
 ---B---
 
-instance Show Expr where
- show = showExpr
+--instance Show Expr where
+ --show = showExpr
 
 showExpr :: Expr -> String
 showExpr (Num n) = show n
@@ -111,13 +108,14 @@ digit = sat isDigit
 
 
 number :: Parser Double
-number = read <$> oneOrMore (char '-' <|> digit <|> char '.')
+number = readsP
 
 sinus :: Parser Expr
-sinus = (char 's' *> char 'i' *> char 'n') *> expr
+sinus = (char 's' *> char 'i' *> char 'n') *> factor
 
 cosinus :: Parser Expr
-cosinus = (char 'c' *> char 'o' *> char 's') *> expr
+cosinus = (char 'c' *> char 'o' *> char 's') *> factor
+
 
 
 expr, term, factor :: Parser Expr
@@ -128,6 +126,14 @@ factor = Num <$> number
          <|>  Sin <$> sinus
          <|>  Cos <$> cosinus
          <|>  return Var <* (char 'x')
+
+
+prop_ShowReadExpr :: Expr -> Bool
+prop_ShowReadExpr expr = (eval e1 0) `almostEqual` (eval expr 0)
+   where (Just e1) = (readExpr $ showExpr expr)
+
+almostEqual :: Double -> Double -> Bool
+almostEqual x y = (x - y) <= 0.01
 
 
 instance Arbitrary Expr where
@@ -159,7 +165,7 @@ simplify :: Expr -> Expr
 simplify Var = Var
 simplify (Num i) = (Num i)
 
-simplify (Add (e) (Num 0 )) = e
+simplify (Add (e) (Num 0)) = e
 simplify (Add (Num 0) (e))  = e
 simplify (Add (Num n1) (Num n2)) = Num (n1+n2)
 simplify (Add e1 e2) = (Add (simplify e1) (simplify e2))
@@ -179,13 +185,6 @@ simplify (Cos e) = Cos (simplify e)
 
 
 
-prop_ShowReadExpr :: Expr -> Bool
-prop_ShowReadExpr expr = (eval e1 0) `almostEqual` (eval expr 0)
-   where (Just e1) = (readExpr $ showExpr expr)
-
-almostEqual :: Double -> Double -> Bool
-almostEqual x y = (x - y) <= 0.001
-
 
 differentiate :: Expr -> Expr
 differentiate = simplify.differentiateHelper
@@ -201,6 +200,10 @@ differentiateHelper (Mul e1 e2) = Add (Mul e1' e2) (Mul e1 e2')
 
 differentiateHelper (Sin e) = (Cos e)
 differentiateHelper (Cos e) = Mul (Num (-1.0)) (Sin e)
+
+
+
+
 
 
 
