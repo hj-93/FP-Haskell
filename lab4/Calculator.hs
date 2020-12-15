@@ -5,9 +5,8 @@
 import ThreepennyPages
 import Graphics.UI.Threepenny.Core as UI
 import qualified Graphics.UI.Threepenny as UI
-import Expr
 import Data.Maybe
-
+import Expr (eval, readExpr, Expr, differentiate)
 canWidth,canHeight :: Num a => a
 canWidth  = 300
 canHeight = 300
