@@ -56,8 +56,8 @@ size (Mul e1 e2) = 1 + size e1 + size e2
 showExpr :: Expr -> String
 showExpr Var         = "x"
 showExpr (Num n)     = show n
-showExpr (Sin e)     = "sin" ++ showSinCos e
-showExpr (Cos e)     = "cos" ++ showSinCos e
+showExpr (Sin e)     = "sin " ++ showSinCos e
+showExpr (Cos e)     = "cos " ++ showSinCos e
 showExpr (Add e1 e2) = showExpr e1 ++ "+" ++ showExpr e2
 showExpr (Mul e1 e2) = showFactor e1 ++ "*" ++ showFactor e2
 
@@ -119,7 +119,7 @@ prop_ShowReadExpr expr = (eval e1 0) `almostEqual` (eval expr 0)
                            where (Just e1) = readExpr $ showExpr expr
 
 almostEqual :: Double -> Double -> Bool
-almostEqual x y = (x - y) <= 1e-10
+almostEqual x y = (x - y) <= 1e-12
 
 instance Arbitrary Expr where
   arbitrary = sized arbExpr
