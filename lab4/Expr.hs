@@ -10,6 +10,7 @@ where
 import Parsing hiding (digit)
 import Data.Char(isDigit, isSpace)
 import Test.QuickCheck
+import Data.Maybe
 import Prelude hiding (sin, cos)
 import qualified Prelude as P
 
@@ -118,7 +119,7 @@ prop_ShowReadExpr expr = (eval e1 0) `almostEqual` (eval expr 0)
                            where (Just e1) = readExpr $ showExpr expr
 
 almostEqual :: Double -> Double -> Bool
-almostEqual x y = (x - y) <= 0.01
+almostEqual x y = (x - y) <= 1e-10
 
 instance Arbitrary Expr where
   arbitrary = sized arbExpr
@@ -149,18 +150,33 @@ simplify (Num i) = (Num i)
 simplify (Add e (Num 0))         = e
 simplify (Add (Num 0) e)         = e
 simplify (Add (Num n1) (Num n2)) = Num (n1 + n2)
-simplify (Add e1 e2)             = Add (simplify e1) (simplify e2)
+simplify (Add e1 e2)
+  | e1 == e1' && e2 == e2' = Add e1 e2
+  | otherwise              = simplify (Add e1' e2')
+     where e1' = simplify e1
+           e2' = simplify e2
 
-
-simplify (Mul _ (Num 0 ))      = Num 0
+simplify (Mul _ (Num 0))       = Num 0
 simplify (Mul (Num 0) _)       = Num 0
-simplify (Mul Var (Num 1))     = Var
-simplify (Mul (Num 1) Var)     = Var
 simplify (Mul (Num a) (Num b)) = Num (a * b)
-simplify (Mul e3 e4)           = Mul (simplify e3) (simplify e4)
+simplify (Mul (Num 1) e)       = simplify e
+simplify (Mul e (Num 1))       = simplify e
+simplify (Mul e1 e2)
+  | e1 == e1' && e2 == e2' = Mul e1 e2
+  | otherwise              = simplify (Mul e1' e2')
+     where e1' = simplify e1
+           e2' = simplify e2
 
-simplify (Sin e) = Sin (simplify e)
-simplify (Cos e) = Cos (simplify e)
+simplify (Sin (Num i)) = Num (P.sin i)
+simplify (Sin e) = simplify' (Sin (simplify e))
+
+simplify (Cos (Num i)) = Num (P.cos i)
+simplify (Cos e) = simplify' (Cos (simplify e))
+
+simplify' :: Expr -> Expr
+simplify' (Cos (Num i)) = simplify (Cos (Num i))
+simplify' (Sin (Num i)) = simplify (Sin (Num i))
+simplify' e             = e
 
 differentiate :: Expr -> Expr
 differentiate = simplify . differentiateHelper
@@ -172,5 +188,7 @@ differentiateHelper (Add e1 e2) = Add (differentiate e1)  (differentiate e2)
 differentiateHelper (Mul e1 e2) = Add (Mul e1' e2) (Mul e1 e2')
                                     where e1' = differentiate e1
                                           e2' = differentiate e2
+differentiateHelper (Cos (Num i)) = Num 0.0
+differentiateHelper (Sin (Num i)) = Num 0.0
 differentiateHelper (Sin e) = Cos e
 differentiateHelper (Cos e) = Mul (Num (-1.0)) (Sin e)
